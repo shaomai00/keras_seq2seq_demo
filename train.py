@@ -14,14 +14,14 @@ trg_max_len = 1 #输出的最大长度
 embedding_vector_dim = 20
 
 if __name__ == '__main__':
-    source, target = [], [] #原始的文本 形如：[['b', 's', 'a', 'q', 'q'], ['n', 'p', 'y'], ['l', 'b', 'w', 'u', 'j']....
+    source, target = [], [] #保存原始的文本 形如：[['b', 's', 'a', 'q', 'q'], ['n', 'p', 'y'], ['l', 'b', 'w', 'u', 'j']....
     vocab = set({})
 
     with open('data/letters_source.txt', 'r', encoding='utf-8', errors='ignore') as f:
         for line in f:
             src_sent = [character for character in line.strip()]
             source.append(src_sent)
-            vocab.update(src_sent)  # 在set中添加多项
+            vocab.update(src_sent)
             src_max_len = src_max_len if src_max_len > len(src_sent) else len(src_sent)
     with open('data/letters_target.txt', 'r', encoding='utf-8', errors='ignore') as f1:
         for line in f1:
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     print('target shape:', tars_train.shape)
 
     en_de_model = Sequential()
-    en_de_model.add(Embedding(vocab_size, embedding_vector_dim, input_length=src_max_len))
+    en_de_model.add(Embedding(vocab_size, embedding_vector_dim, input_length=src_max_len)) #这里可以很方便的替换成预训练的embedding look-up层
     en_de_model.add(
         AttentionSeq2Seq(input_length=src_max_len, input_dim=embedding_vector_dim, hidden_dim=embedding_vector_dim,
                          output_length=trg_max_len, output_dim=embedding_vector_dim))
