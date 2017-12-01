@@ -63,29 +63,42 @@ if __name__ == '__main__':
     en_de_model.add(TimeDistributed(Dense(vocab_size, activation='relu')))
     en_de_model.add(Activation('softmax'))
     en_de_model.summary()
-    en_de_model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+    en_de_model.compile(loss='categorical_crossentropy', optimizer='adam')
 
     from sklearn.model_selection import train_test_split
     X_train, X_valid, y_train, y_valid = train_test_split(inputs_train, tars_train, test_size=0.1,
                                                           random_state=1000)
-    for iter_num in range(5000):
-        en_de_model.fit(X_train, y_train, batch_size=50, epochs=1, verbose=2, validation_data=(X_valid, y_valid))
-        out_predicts = en_de_model.predict(X_valid[:2])
-        print(out_predicts.shape)
-        for i_idx, out_predict in enumerate(y_valid[:2]):
-            predict_sequence = []
-            for predict_vector in out_predict:
-                next_index = np.argmax(predict_vector)
-                next_token = idx_to_word[next_index]
-                predict_sequence.append(next_token)
-            print('Target output:', predict_sequence)
+    class PredictValid(Callback):
+        def __init__(self, x, y):
+            self.x = x
+            self.y = y
+            super(PredictValid, self).__init__()
+        def on_epoch_end(self, epoch, logs={}):
+            out_predicts = en_de_model.predict(self.x)
+            for i_idx, out_predict in enumerate(self.y):
+                predict_sequence = []
+                for predict_vector in out_predict:
+                    next_index = np.argmax(predict_vector)
+                    next_token = idx_to_word[next_index]
+                    predict_sequence.append(next_token)
+                print('Target output:', predict_sequence)
+            for i_idx, out_predict in enumerate(out_predicts):
+                predict_sequence = []
+                for predict_vector in out_predict:
+                    next_index = np.argmax(predict_vector)
+                    next_token = idx_to_word[next_index]
+                    predict_sequence.append(next_token)
+                print('Predict output:', predict_sequence)
 
-        for i_idx, out_predict in enumerate(out_predicts):
-            predict_sequence = []
-            for predict_vector in out_predict:
-                next_index = np.argmax(predict_vector)
-                next_token = idx_to_word[next_index]
-                predict_sequence.append(next_token)
-            print('Predict output:', predict_sequence)
+    predictValid = PredictValid(X_valid[:2], y_valid[:2])
+    early_stopping = EarlyStopping(monitor='val_loss', patience=20, mode='auto')
 
-        print('Current iter_num is:%d' % iter_num)
+    callbacks_list = [predictValid,early_stopping]
+    en_de_model.fit(
+        X_train, y_train,
+        batch_size=50,
+        epochs=100,
+        validation_data=(X_valid, y_valid),
+        verbose=2,
+        callbacks=callbacks_list
+    )
